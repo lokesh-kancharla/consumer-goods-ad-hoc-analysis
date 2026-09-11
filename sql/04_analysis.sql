@@ -3,18 +3,27 @@
 -- Step 5: Business Analysis
 -- Author: Lokesh Kancharla
 -- Database: consumer_goods_db
+-- Scenario: United States consumer-goods market
 -- ==========================================================
 
 USE consumer_goods_db;
 
--- 1. Markets where Croma operates in APAC.
-SELECT DISTINCT market
-FROM dim_customer
-WHERE customer = 'Croma'
-  AND region = 'APAC'
-ORDER BY market;
+-- 1. Which U.S. regions generated the highest gross sales in FY2021?
+SELECT
+    c.region,
+    ROUND(SUM(s.sold_quantity * g.gross_price), 2) AS gross_sales
+FROM fact_sales_monthly s
+JOIN dim_customer c
+  ON s.customer_code = c.customer_code
+JOIN fact_gross_price g
+  ON s.product_code = g.product_code
+ AND s.fiscal_year = g.fiscal_year
+WHERE c.market = 'USA'
+  AND s.fiscal_year = 2021
+GROUP BY c.region
+ORDER BY gross_sales DESC;
 
--- 2. Percentage increase in unique products from 2020 to 2021.
+-- 2. What was the percentage increase in unique products from FY2020 to FY2021?
 WITH product_counts AS (
     SELECT fiscal_year, COUNT(DISTINCT product_code) AS unique_products
     FROM fact_gross_price
@@ -33,7 +42,7 @@ SELECT
     ROUND((products_2021 - products_2020) * 100.0 / products_2020, 2) AS pct_change
 FROM pivoted;
 
--- 3. Unique product count by segment.
+-- 3. How many unique products are available in each product segment?
 SELECT
     segment,
     COUNT(DISTINCT product_code) AS product_count
@@ -41,7 +50,7 @@ FROM dim_product
 GROUP BY segment
 ORDER BY product_count DESC, segment;
 
--- 4. Segment with the largest increase in unique products.
+-- 4. Which segment(s) had the largest increase in unique products from FY2020 to FY2021?
 WITH segment_year AS (
     SELECT
         p.segment,
@@ -60,16 +69,26 @@ segment_growth AS (
         MAX(CASE WHEN fiscal_year = 2021 THEN product_count ELSE 0 END) AS products_2021
     FROM segment_year
     GROUP BY segment
+),
+ranked_growth AS (
+    SELECT
+        segment,
+        products_2020,
+        products_2021,
+        products_2021 - products_2020 AS increase_in_products,
+        DENSE_RANK() OVER (ORDER BY products_2021 - products_2020 DESC) AS growth_rank
+    FROM segment_growth
 )
 SELECT
     segment,
     products_2020,
     products_2021,
-    products_2021 - products_2020 AS increase_in_products
-FROM segment_growth
-ORDER BY increase_in_products DESC, segment;
+    increase_in_products
+FROM ranked_growth
+WHERE growth_rank = 1
+ORDER BY segment;
 
--- 5. Products with highest and lowest manufacturing costs.
+-- 5. Which products had the highest and lowest manufacturing costs in FY2021?
 WITH ranked_costs AS (
     SELECT
         p.product_code,
@@ -87,21 +106,23 @@ FROM ranked_costs
 WHERE high_rank = 1 OR low_rank = 1
 ORDER BY manufacturing_cost DESC;
 
--- 6. Top 5 customers by average pre-invoice discount in India.
+-- 6. Which U.S. customers received the highest average pre-invoice discounts in FY2021?
 SELECT
     c.customer_code,
     c.customer,
+    c.region,
+    c.channel,
     ROUND(AVG(d.pre_invoice_discount_pct) * 100, 2) AS avg_discount_pct
 FROM fact_pre_invoice_deductions d
 JOIN dim_customer c
   ON d.customer_code = c.customer_code
 WHERE d.fiscal_year = 2021
-  AND c.market = 'India'
-GROUP BY c.customer_code, c.customer
+  AND c.market = 'USA'
+GROUP BY c.customer_code, c.customer, c.region, c.channel
 ORDER BY avg_discount_pct DESC
 LIMIT 5;
 
--- 7. Monthly gross sales for Croma.
+-- 7. What was BestBuy's monthly gross sales trend in FY2021?
 SELECT
     DATE_FORMAT(s.sale_date, '%Y-%m') AS month,
     ROUND(SUM(s.sold_quantity * g.gross_price), 2) AS gross_sales
@@ -111,11 +132,12 @@ JOIN dim_customer c
 JOIN fact_gross_price g
   ON s.product_code = g.product_code
  AND s.fiscal_year = g.fiscal_year
-WHERE c.customer = 'Croma'
+WHERE c.customer = 'BestBuy'
+  AND s.fiscal_year = 2021
 GROUP BY DATE_FORMAT(s.sale_date, '%Y-%m')
 ORDER BY month;
 
--- 8. Quarter with the highest total sold quantity.
+-- 8. Which fiscal quarter generated the highest sold quantity in FY2021?
 WITH quarterly_sales AS (
     SELECT
         CASE
@@ -131,9 +153,10 @@ WITH quarterly_sales AS (
 )
 SELECT fiscal_quarter, total_sold_quantity
 FROM quarterly_sales
-ORDER BY total_sold_quantity DESC;
+ORDER BY total_sold_quantity DESC
+LIMIT 1;
 
--- 9. Gross sales contribution by channel.
+-- 9. What percentage of gross sales came from each U.S. sales channel in FY2021?
 WITH channel_sales AS (
     SELECT
         c.channel,
@@ -145,6 +168,7 @@ WITH channel_sales AS (
       ON s.product_code = g.product_code
      AND s.fiscal_year = g.fiscal_year
     WHERE s.fiscal_year = 2021
+      AND c.market = 'USA'
     GROUP BY c.channel
 ),
 total_sales AS (
@@ -159,7 +183,7 @@ FROM channel_sales cs
 CROSS JOIN total_sales ts
 ORDER BY cs.gross_sales DESC;
 
--- 10. Top 3 products by sold quantity within each division.
+-- 10. What are the top 3 products by sold quantity within each division?
 WITH product_sales AS (
     SELECT
         p.division,
