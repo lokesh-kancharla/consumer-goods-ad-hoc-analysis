@@ -1,6 +1,6 @@
 # Consumer Goods Ad-hoc Analysis
 
-A simple MySQL and Power BI portfolio project that analyzes consumer-goods sales in the U.S.
+A simple MySQL portfolio project that analyzes consumer-goods sales across U.S. regions.
 
 The goal is to use SQL to answer business questions about sales, products, customers, discounts, manufacturing costs, regions, and sales channels.
 
@@ -8,7 +8,7 @@ The goal is to use SQL to answer business questions about sales, products, custo
 
 - MySQL
 - SQL
-- Power BI
+- Power BI (dashboard next)
 
 ## Database
 
@@ -48,24 +48,24 @@ dim_customer ── fact_sales_monthly ── dim_product
 
 `customer_code` connects customer data to sales and discounts. `product_code` connects product data to sales, prices, and manufacturing costs.
 
-The sample dataset uses U.S. customers such as BestBuy, Amazon, Walmart, Target, Costco, Staples, Newegg, and B&H Photo. The figures are synthetic and are used only for portfolio analysis.
+The sample dataset contains U.S. customers such as BestBuy, Amazon, Walmart, Target, Costco, Staples, Newegg, and B&H Photo. All figures are synthetic and are used only for portfolio analysis.
 
 ## Business Questions
 
-1. Which U.S. regions generated the highest gross sales in FY2025?
+1. Which regions generated the highest gross sales in FY2025?
 2. What was the percentage increase in unique products from FY2024 to FY2025?
 3. How many unique products are available in each segment?
 4. Which segments grew from FY2024 to FY2025?
 5. Which products had the highest and lowest manufacturing costs in FY2025?
-6. Which U.S. customers received the highest discounts in FY2025?
+6. Which customers received the highest discounts in FY2025?
 7. What was BestBuy's monthly gross sales trend in FY2025?
 8. Which fiscal quarter had the highest sold quantity in FY2025?
-9. What percentage of gross sales came from each U.S. sales channel in FY2025?
+9. What percentage of gross sales came from each sales channel in FY2025?
 10. What are the top 3 products by sold quantity within each division in FY2025?
 
 ## SQL Skills Used
 
-- JOINs
+- INNER JOINs
 - GROUP BY
 - SUM and COUNT
 - MIN and MAX
