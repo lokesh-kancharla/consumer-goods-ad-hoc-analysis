@@ -1,19 +1,25 @@
 # Data Model
 
-The project uses a small star-style analytical model with 2 dimension tables and 4 fact tables.
+The project uses a small star-style analytical model with 2 dimension tables and 4 fact tables for a U.S.-focused consumer-goods analytics scenario.
 
 ## Dimension tables
 
 ### `dim_customer`
-One row per customer-market combination.
+One row per U.S. customer account.
 
 Primary key: `customer_code`
+
+Important fields:
+- `customer` — customer/account name such as BestBuy, Amazon, Walmart, Target, Costco, Staples, Newegg, and B&H Photo
+- `market` — set to `USA` for this portfolio dataset
+- `region` — U.S. operating region such as Midwest, West, South, and Northeast
+- `channel` — sales channel such as Retailer, E-Commerce, or Warehouse Club
 
 Used by:
 - `fact_sales_monthly.customer_code`
 - `fact_pre_invoice_deductions.customer_code`
 
-Relationship: one customer can have many sales rows, while each sales row belongs to one customer.
+Relationship: one customer can have many sales rows and one discount record per fiscal year.
 
 ### `dim_product`
 One row per product.
@@ -25,7 +31,7 @@ Used by:
 - `fact_gross_price.product_code`
 - `fact_manufacturing_cost.product_code`
 
-Relationship: one product can appear in many sales, pricing, and cost records.
+Relationship: one product can appear in many sales rows, pricing records, and cost records.
 
 ## Fact tables
 
@@ -75,4 +81,4 @@ dim_customer (1) ─────< fact_sales_monthly (*) >───── (1) di
       └────< fact_pre_invoice_deductions (*)
 ```
 
-The primary/foreign-key design prevents orphan records and supports joins used throughout the analysis queries.
+The customer dimension supports U.S. region, customer, and channel analysis. The product dimension supports product-segment, product-division, cost, price, and ranking analysis.
