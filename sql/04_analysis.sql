@@ -1,219 +1,121 @@
--- ==========================================================
 -- Consumer Goods Ad-hoc Analysis
 -- Step 5: Business Analysis
--- Author: Lokesh Kancharla
--- Database: consumer_goods_db
--- Scenario: United States consumer-goods market
--- ==========================================================
 
 USE consumer_goods_db;
 
--- 1. Which U.S. regions generated the highest gross sales in FY2021?
-SELECT
-    c.region,
-    ROUND(SUM(s.sold_quantity * g.gross_price), 2) AS gross_sales
+-- 1. Which U.S. regions generated the highest gross sales in FY2025?
+SELECT c.region, ROUND(SUM(s.sold_quantity * g.gross_price), 2) AS gross_sales
 FROM fact_sales_monthly s
-JOIN dim_customer c
-  ON s.customer_code = c.customer_code
-JOIN fact_gross_price g
-  ON s.product_code = g.product_code
- AND s.fiscal_year = g.fiscal_year
-WHERE c.market = 'USA'
-  AND s.fiscal_year = 2021
+JOIN dim_customer c ON s.customer_code = c.customer_code
+JOIN fact_gross_price g ON s.product_code = g.product_code AND s.fiscal_year = g.fiscal_year
+WHERE c.market = 'USA' AND s.fiscal_year = 2025
 GROUP BY c.region
 ORDER BY gross_sales DESC;
 
--- 2. What was the percentage increase in unique products from FY2020 to FY2021?
+-- 2. What was the percentage increase in unique products from FY2024 to FY2025?
 WITH product_counts AS (
     SELECT fiscal_year, COUNT(DISTINCT product_code) AS unique_products
     FROM fact_gross_price
-    WHERE fiscal_year IN (2020, 2021)
+    WHERE fiscal_year IN (2024, 2025)
     GROUP BY fiscal_year
-),
-pivoted AS (
-    SELECT
-        MAX(CASE WHEN fiscal_year = 2020 THEN unique_products END) AS products_2020,
-        MAX(CASE WHEN fiscal_year = 2021 THEN unique_products END) AS products_2021
-    FROM product_counts
 )
 SELECT
-    products_2020,
-    products_2021,
-    ROUND((products_2021 - products_2020) * 100.0 / products_2020, 2) AS pct_change
-FROM pivoted;
+    MAX(CASE WHEN fiscal_year = 2024 THEN unique_products END) AS products_2024,
+    MAX(CASE WHEN fiscal_year = 2025 THEN unique_products END) AS products_2025,
+    ROUND((MAX(CASE WHEN fiscal_year = 2025 THEN unique_products END) -
+           MAX(CASE WHEN fiscal_year = 2024 THEN unique_products END)) * 100.0 /
+           MAX(CASE WHEN fiscal_year = 2024 THEN unique_products END), 2) AS pct_change
+FROM product_counts;
 
--- 3. How many unique products are available in each product segment?
-SELECT
-    segment,
-    COUNT(DISTINCT product_code) AS product_count
+-- 3. How many unique products are available in each segment?
+SELECT segment, COUNT(DISTINCT product_code) AS product_count
 FROM dim_product
 GROUP BY segment
-ORDER BY product_count DESC, segment;
+ORDER BY product_count DESC;
 
--- 4. Which segment(s) had the largest increase in unique products from FY2020 to FY2021?
-WITH segment_year AS (
-    SELECT
-        p.segment,
-        g.fiscal_year,
-        COUNT(DISTINCT g.product_code) AS product_count
-    FROM fact_gross_price g
-    JOIN dim_product p
-      ON g.product_code = p.product_code
-    WHERE g.fiscal_year IN (2020, 2021)
-    GROUP BY p.segment, g.fiscal_year
-),
-segment_growth AS (
-    SELECT
-        segment,
-        MAX(CASE WHEN fiscal_year = 2020 THEN product_count ELSE 0 END) AS products_2020,
-        MAX(CASE WHEN fiscal_year = 2021 THEN product_count ELSE 0 END) AS products_2021
-    FROM segment_year
-    GROUP BY segment
-),
-ranked_growth AS (
-    SELECT
-        segment,
-        products_2020,
-        products_2021,
-        products_2021 - products_2020 AS increase_in_products,
-        DENSE_RANK() OVER (ORDER BY products_2021 - products_2020 DESC) AS growth_rank
-    FROM segment_growth
-)
+-- 4. Which segments grew from FY2024 to FY2025?
 SELECT
-    segment,
-    products_2020,
-    products_2021,
-    increase_in_products
-FROM ranked_growth
-WHERE growth_rank = 1
-ORDER BY segment;
+    p.segment,
+    COUNT(DISTINCT CASE WHEN g.fiscal_year = 2024 THEN g.product_code END) AS products_2024,
+    COUNT(DISTINCT CASE WHEN g.fiscal_year = 2025 THEN g.product_code END) AS products_2025
+FROM fact_gross_price g
+JOIN dim_product p ON g.product_code = p.product_code
+GROUP BY p.segment
+ORDER BY products_2025 - products_2024 DESC;
 
--- 5. Which products had the highest and lowest manufacturing costs in FY2021?
-WITH ranked_costs AS (
-    SELECT
-        p.product_code,
-        p.product,
-        m.manufacturing_cost,
-        DENSE_RANK() OVER (ORDER BY m.manufacturing_cost DESC) AS high_rank,
-        DENSE_RANK() OVER (ORDER BY m.manufacturing_cost ASC) AS low_rank
-    FROM fact_manufacturing_cost m
-    JOIN dim_product p
-      ON m.product_code = p.product_code
-    WHERE m.cost_year = 2021
-)
-SELECT product_code, product, manufacturing_cost
-FROM ranked_costs
-WHERE high_rank = 1 OR low_rank = 1
-ORDER BY manufacturing_cost DESC;
+-- 5. Which products had the highest and lowest manufacturing costs in FY2025?
+SELECT p.product, m.manufacturing_cost
+FROM fact_manufacturing_cost m
+JOIN dim_product p ON m.product_code = p.product_code
+WHERE m.cost_year = 2025
+  AND m.manufacturing_cost IN (
+      (SELECT MAX(manufacturing_cost) FROM fact_manufacturing_cost WHERE cost_year = 2025),
+      (SELECT MIN(manufacturing_cost) FROM fact_manufacturing_cost WHERE cost_year = 2025)
+  )
+ORDER BY m.manufacturing_cost DESC;
 
--- 6. Which U.S. customers received the highest average pre-invoice discounts in FY2021?
-SELECT
-    c.customer_code,
-    c.customer,
-    c.region,
-    c.channel,
-    ROUND(AVG(d.pre_invoice_discount_pct) * 100, 2) AS avg_discount_pct
+-- 6. Which U.S. customers received the highest discounts in FY2025?
+SELECT c.customer, ROUND(d.pre_invoice_discount_pct * 100, 2) AS discount_pct
 FROM fact_pre_invoice_deductions d
-JOIN dim_customer c
-  ON d.customer_code = c.customer_code
-WHERE d.fiscal_year = 2021
-  AND c.market = 'USA'
-GROUP BY c.customer_code, c.customer, c.region, c.channel
-ORDER BY avg_discount_pct DESC
+JOIN dim_customer c ON d.customer_code = c.customer_code
+WHERE d.fiscal_year = 2025 AND c.market = 'USA'
+ORDER BY discount_pct DESC
 LIMIT 5;
 
--- 7. What was BestBuy's monthly gross sales trend in FY2021?
-SELECT
-    DATE_FORMAT(s.sale_date, '%Y-%m') AS month,
-    ROUND(SUM(s.sold_quantity * g.gross_price), 2) AS gross_sales
+-- 7. What was BestBuy's monthly gross sales trend in FY2025?
+SELECT DATE_FORMAT(s.sale_date, '%Y-%m') AS month,
+       ROUND(SUM(s.sold_quantity * g.gross_price), 2) AS gross_sales
 FROM fact_sales_monthly s
-JOIN dim_customer c
-  ON s.customer_code = c.customer_code
-JOIN fact_gross_price g
-  ON s.product_code = g.product_code
- AND s.fiscal_year = g.fiscal_year
-WHERE c.customer = 'BestBuy'
-  AND s.fiscal_year = 2021
+JOIN dim_customer c ON s.customer_code = c.customer_code
+JOIN fact_gross_price g ON s.product_code = g.product_code AND s.fiscal_year = g.fiscal_year
+WHERE c.customer = 'BestBuy' AND s.fiscal_year = 2025
 GROUP BY DATE_FORMAT(s.sale_date, '%Y-%m')
 ORDER BY month;
 
--- 8. Which fiscal quarter generated the highest sold quantity in FY2021?
-WITH quarterly_sales AS (
-    SELECT
-        CASE
-            WHEN MONTH(sale_date) IN (9,10,11) THEN 'Q1'
-            WHEN MONTH(sale_date) IN (12,1,2) THEN 'Q2'
-            WHEN MONTH(sale_date) IN (3,4,5) THEN 'Q3'
-            ELSE 'Q4'
-        END AS fiscal_quarter,
-        SUM(sold_quantity) AS total_sold_quantity
-    FROM fact_sales_monthly
-    WHERE fiscal_year = 2021
-    GROUP BY fiscal_quarter
-)
-SELECT fiscal_quarter, total_sold_quantity
-FROM quarterly_sales
+-- 8. Which fiscal quarter had the highest sold quantity in FY2025?
+SELECT
+    CASE
+        WHEN MONTH(sale_date) IN (9,10,11) THEN 'Q1'
+        WHEN MONTH(sale_date) IN (12,1,2) THEN 'Q2'
+        WHEN MONTH(sale_date) IN (3,4,5) THEN 'Q3'
+        ELSE 'Q4'
+    END AS fiscal_quarter,
+    SUM(sold_quantity) AS total_sold_quantity
+FROM fact_sales_monthly
+WHERE fiscal_year = 2025
+GROUP BY fiscal_quarter
 ORDER BY total_sold_quantity DESC
 LIMIT 1;
 
--- 9. What percentage of gross sales came from each U.S. sales channel in FY2021?
+-- 9. What percentage of gross sales came from each U.S. sales channel in FY2025?
 WITH channel_sales AS (
-    SELECT
-        c.channel,
-        SUM(s.sold_quantity * g.gross_price) AS gross_sales
+    SELECT c.channel, SUM(s.sold_quantity * g.gross_price) AS gross_sales
     FROM fact_sales_monthly s
-    JOIN dim_customer c
-      ON s.customer_code = c.customer_code
-    JOIN fact_gross_price g
-      ON s.product_code = g.product_code
-     AND s.fiscal_year = g.fiscal_year
-    WHERE s.fiscal_year = 2021
-      AND c.market = 'USA'
+    JOIN dim_customer c ON s.customer_code = c.customer_code
+    JOIN fact_gross_price g ON s.product_code = g.product_code AND s.fiscal_year = g.fiscal_year
+    WHERE s.fiscal_year = 2025 AND c.market = 'USA'
     GROUP BY c.channel
-),
-total_sales AS (
-    SELECT SUM(gross_sales) AS grand_total
-    FROM channel_sales
 )
-SELECT
-    cs.channel,
-    ROUND(cs.gross_sales / 1000000, 2) AS gross_sales_mln,
-    ROUND(cs.gross_sales * 100.0 / ts.grand_total, 2) AS contribution_pct
-FROM channel_sales cs
-CROSS JOIN total_sales ts
-ORDER BY cs.gross_sales DESC;
+SELECT channel,
+       ROUND(gross_sales, 2) AS gross_sales,
+       ROUND(gross_sales * 100.0 / (SELECT SUM(gross_sales) FROM channel_sales), 2) AS contribution_pct
+FROM channel_sales
+ORDER BY gross_sales DESC;
 
--- 10. What are the top 3 products by sold quantity within each division?
+-- 10. What are the top 3 products by sold quantity within each division in FY2025?
 WITH product_sales AS (
-    SELECT
-        p.division,
-        p.product_code,
-        p.product,
-        SUM(s.sold_quantity) AS total_sold_quantity
+    SELECT p.division, p.product, SUM(s.sold_quantity) AS total_sold_quantity
     FROM fact_sales_monthly s
-    JOIN dim_product p
-      ON s.product_code = p.product_code
-    WHERE s.fiscal_year = 2021
-    GROUP BY p.division, p.product_code, p.product
+    JOIN dim_product p ON s.product_code = p.product_code
+    WHERE s.fiscal_year = 2025
+    GROUP BY p.division, p.product
 ),
 ranked_products AS (
-    SELECT
-        division,
-        product_code,
-        product,
-        total_sold_quantity,
-        DENSE_RANK() OVER (
-            PARTITION BY division
-            ORDER BY total_sold_quantity DESC
-        ) AS product_rank
+    SELECT division, product, total_sold_quantity,
+           DENSE_RANK() OVER (PARTITION BY division ORDER BY total_sold_quantity DESC) AS product_rank
     FROM product_sales
 )
-SELECT
-    division,
-    product_code,
-    product,
-    total_sold_quantity,
-    product_rank
+SELECT division, product, total_sold_quantity, product_rank
 FROM ranked_products
 WHERE product_rank <= 3
-ORDER BY division, product_rank, product;
+ORDER BY division, product_rank;
