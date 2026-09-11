@@ -1,7 +1,10 @@
 -- ==========================================================
 -- Consumer Goods Ad-hoc Analysis
 -- Author: Lokesh Kancharla
+-- Database: consumer_goods_db
 -- ==========================================================
+
+USE consumer_goods_db;
 
 -- 1. Markets where Croma operates in APAC.
 SELECT DISTINCT market
