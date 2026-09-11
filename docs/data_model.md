@@ -1,84 +1,41 @@
 # Data Model
 
-The project uses a small star-style analytical model with 2 dimension tables and 4 fact tables for a U.S.-focused consumer-goods analytics scenario.
+This project uses 6 simple tables to analyze consumer-goods sales in the U.S.
 
-## Dimension tables
+## Tables
 
 ### `dim_customer`
-One row per U.S. customer account.
-
-Primary key: `customer_code`
-
-Important fields:
-- `customer` — customer/account name such as BestBuy, Amazon, Walmart, Target, Costco, Staples, Newegg, and B&H Photo
-- `market` — set to `USA` for this portfolio dataset
-- `region` — U.S. operating region such as Midwest, West, South, and Northeast
-- `channel` — sales channel such as Retailer, E-Commerce, or Warehouse Club
-
-Used by:
-- `fact_sales_monthly.customer_code`
-- `fact_pre_invoice_deductions.customer_code`
-
-Relationship: one customer can have many sales rows and one discount record per fiscal year.
+Stores customer information such as customer name, region, and sales channel.
 
 ### `dim_product`
-One row per product.
-
-Primary key: `product_code`
-
-Used by:
-- `fact_sales_monthly.product_code`
-- `fact_gross_price.product_code`
-- `fact_manufacturing_cost.product_code`
-
-Relationship: one product can appear in many sales rows, pricing records, and cost records.
-
-## Fact tables
+Stores product information such as product name, segment, and division.
 
 ### `fact_sales_monthly`
-Stores sales activity by date, customer, product, and fiscal year.
-
-Foreign keys:
-- `customer_code` → `dim_customer.customer_code`
-- `product_code` → `dim_product.product_code`
+Stores sales transactions including date, customer, product, fiscal year, and quantity sold.
 
 ### `fact_gross_price`
-Stores product gross price by fiscal year.
-
-Foreign key:
-- `product_code` → `dim_product.product_code`
-
-Composite primary key:
-- (`product_code`, `fiscal_year`)
+Stores the selling price of each product by fiscal year.
 
 ### `fact_manufacturing_cost`
-Stores manufacturing cost by product and cost year.
-
-Foreign key:
-- `product_code` → `dim_product.product_code`
-
-Composite primary key:
-- (`product_code`, `cost_year`)
+Stores the manufacturing cost of each product.
 
 ### `fact_pre_invoice_deductions`
-Stores customer-level pre-invoice discount percentage by fiscal year.
+Stores the discount percentage given to each customer.
 
-Foreign key:
-- `customer_code` → `dim_customer.customer_code`
-
-Composite primary key:
-- (`customer_code`, `fiscal_year`)
-
-## Relationship summary
+## Relationships
 
 ```text
-dim_customer (1) ─────< fact_sales_monthly (*) >───── (1) dim_product
-      |                                                    |
-      |                                                    ├────< fact_gross_price (*)
-      |                                                    |
-      |                                                    └────< fact_manufacturing_cost (*)
+dim_customer ── fact_sales_monthly ── dim_product
+      |                                  |
+      |                                  ├── fact_gross_price
+      |                                  |
+      |                                  └── fact_manufacturing_cost
       |
-      └────< fact_pre_invoice_deductions (*)
+      └── fact_pre_invoice_deductions
 ```
 
-The customer dimension supports U.S. region, customer, and channel analysis. The product dimension supports product-segment, product-division, cost, price, and ranking analysis.
+`customer_code` connects customer data to sales and discounts.
+
+`product_code` connects product data to sales, prices, and manufacturing costs.
+
+These tables are used to answer business questions about sales, products, customers, discounts, costs, regions, and sales channels.
