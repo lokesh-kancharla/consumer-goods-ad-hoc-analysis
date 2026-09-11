@@ -1,36 +1,36 @@
 # Business Questions
 
-This project simulates ad-hoc requests from management at a consumer-goods company.
+This project simulates ad-hoc requests from management at a U.S.-focused consumer-goods company.
 
-## Request 1 — Market Presence
-Identify the APAC markets in which Croma operates.
+## Request 1 — Regional Sales Performance
+Identify which U.S. regions generated the highest gross sales in FY2021.
 
 ## Request 2 — Product Expansion
-Compare the number of unique products in fiscal years 2020 and 2021 and calculate percentage growth.
+Compare the number of unique products in FY2020 and FY2021 and calculate percentage growth.
 
 ## Request 3 — Product Mix
-Determine how many unique products exist in each segment.
+Determine how many unique products exist in each product segment.
 
 ## Request 4 — Segment Growth
-Identify which product segment added the most products from 2020 to 2021.
+Identify the product segment or segments that added the most products from FY2020 to FY2021.
 
 ## Request 5 — Manufacturing Cost Extremes
-Find the products with the highest and lowest manufacturing costs.
+Find the products with the highest and lowest manufacturing costs in FY2021.
 
 ## Request 6 — Customer Discount Analysis
-Identify the top five Indian customers receiving the highest average pre-invoice discounts.
+Identify the top five U.S. customers receiving the highest average pre-invoice discounts in FY2021.
 
 ## Request 7 — Customer Sales Trend
-Calculate monthly gross sales for Croma to identify seasonality and changes in performance.
+Calculate monthly gross sales for BestBuy to identify account-level sales movement.
 
 ## Request 8 — Quarterly Volume
-Determine which fiscal quarter generated the highest sold quantity.
+Determine which fiscal quarter generated the highest sold quantity in FY2021.
 
 ## Request 9 — Channel Contribution
-Calculate gross sales by channel and each channel's percentage contribution to total gross sales.
+Calculate gross sales by U.S. sales channel and each channel's percentage contribution to total gross sales.
 
 ## Request 10 — Product Ranking
 Find the top three products by sold quantity within each product division.
 
 ## Interview Talking Points
-The project demonstrates how SQL can translate vague business questions into measurable KPIs. The analysis uses joins across customer, product, pricing, cost, discount, and sales tables; CTEs to structure multi-stage calculations; and window functions to rank products within business divisions.
+The project demonstrates how SQL can translate business questions into measurable KPIs for a U.S. consumer-goods scenario. The analysis uses customer, product, pricing, cost, discount, and sales tables; CTEs to structure multi-step calculations; and window functions to rank products and handle ties.
