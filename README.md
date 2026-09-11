@@ -1,9 +1,16 @@
 # Consumer Goods Ad-hoc Analysis
 
-A SQL portfolio project focused on answering practical business questions for a fictional consumer-goods company.
+A portfolio-ready MySQL project that demonstrates an end-to-end analytical workflow: database initialization, relational schema design, reproducible data loading, validation, and business analysis.
 
 ## Project Objective
-Use SQL to analyze sales, customers, products, markets, discounts, and manufacturing costs and convert raw transactional data into decision-ready insights.
+
+Use SQL to answer practical management questions across customers, products, pricing, manufacturing cost, discounts, and sales. The project is intentionally structured like a small analytical codebase rather than a collection of disconnected SQL files.
+
+## Technology
+
+- MySQL 8.0+
+- Relational modeling with primary and foreign keys
+- CTEs, window functions, aggregations, CASE expressions, ranking, and KPI calculations
 
 ## Database Name
 
@@ -11,107 +18,171 @@ Use SQL to analyze sales, customers, products, markets, discounts, and manufactu
 consumer_goods_db
 ```
 
-The database name is consistent across the project. The setup script creates `consumer_goods_db`, and the analysis script starts with `USE consumer_goods_db;`.
+Every SQL file explicitly uses the same database name.
 
-## How to Run the Project
+## End-to-End Execution Order
 
-### Option 1 — MySQL Workbench
-1. Open MySQL Workbench.
-2. Open `sql/00_create_database.sql`.
-3. Click the lightning/execute button. This creates the database, tables, sample data, and validation counts.
-4. Open `sql/02_analysis.sql`.
-5. Execute each request one by one to see the results.
+Run the files in this exact order:
 
-### Option 2 — MySQL Command Line
+```text
+sql/00_init_database.sql
+        ↓
+sql/01_schema.sql
+        ↓
+sql/02_seed_data.sql
+        ↓
+sql/03_validation.sql
+        ↓
+sql/04_analysis.sql
+```
+
+Each file has one responsibility. There is no duplicate schema creation or duplicate data loading.
+
+### Step 1 — Initialize the database
+
+`sql/00_init_database.sql`
+
+- Drops the old demo database if it exists.
+- Creates `consumer_goods_db`.
+- Sets UTF-8 character encoding.
+- Selects the database for use.
+
+### Step 2 — Create the schema
+
+`sql/01_schema.sql`
+
+Creates 2 dimension tables and 4 fact tables with:
+
+- Primary keys
+- Foreign keys
+- Data types
+- NOT NULL rules
+- CHECK constraints
+- Useful indexes for common joins and filters
+
+### Step 3 — Load sample data
+
+`sql/02_seed_data.sql`
+
+Loads the reproducible dataset inside a transaction. If the script completes successfully, `COMMIT` saves the inserted records.
+
+### Step 4 — Validate the load
+
+`sql/03_validation.sql`
+
+Runs row-count checks and orphan-record checks. The referential-integrity checks should return `0` issues.
+
+### Step 5 — Run the business analysis
+
+`sql/04_analysis.sql`
+
+Contains 10 ad-hoc analytical requests covering product growth, manufacturing cost, discounting, customer sales, quarterly volume, channel contribution, and product ranking.
+
+## MySQL Workbench Instructions
+
+1. Open MySQL Workbench and connect to your MySQL server.
+2. Open and execute `sql/00_init_database.sql`.
+3. Execute `sql/01_schema.sql`.
+4. Execute `sql/02_seed_data.sql`.
+5. Execute `sql/03_validation.sql` and confirm the load is valid.
+6. Execute the queries in `sql/04_analysis.sql` one by one and review the result grids.
+
+## Command-Line Instructions
+
+From the repository root:
 
 ```bash
-mysql -u root -p < sql/00_create_database.sql
-mysql -u root -p consumer_goods_db < sql/02_analysis.sql
-```
-
-## File Execution Order
-
-Recommended:
-
-```text
-sql/00_create_database.sql
-        ↓
-sql/02_analysis.sql
-```
-
-Manual alternative:
-
-```text
-Create/select database manually
-        ↓
-sql/00_schema.sql
-        ↓
-sql/01_sample_data.sql
-        ↓
-sql/02_analysis.sql
-```
-
-## Business Questions Covered
-1. Identify markets where a major customer operates.
-2. Measure year-over-year growth in unique products.
-3. Find product segments with the largest product counts.
-4. Identify segments with the strongest product growth.
-5. Find products with the highest and lowest manufacturing costs.
-6. Rank customers by average pre-invoice discount.
-7. Track monthly gross sales for a key customer.
-8. Identify the quarter with the highest sold quantity.
-9. Rank sales channels by gross sales contribution.
-10. Identify top products within each product division.
-
-## SQL Skills Demonstrated
-- Database creation
-- Primary keys and foreign keys
-- Dimension and fact table design
-- JOINs
-- GROUP BY and aggregation
-- CTEs
-- Window functions
-- CASE expressions
-- Percentage calculations
-- Ranking
-- Date-based analysis
-- Business KPI calculations
-
-## Repository Structure
-- `sql/00_create_database.sql` — complete database setup script with database creation, tables, sample data, and validation checks
-- `sql/00_schema.sql` — table schema only
-- `sql/01_sample_data.sql` — sample dataset only
-- `sql/02_analysis.sql` — 10 business analysis queries
-- `docs/business_questions.md` — business context for each request
-
-## Presentation
-A 5-slide PowerPoint presentation was created for this project with the data model, insights, and SQL skills summary. Add it to the repository root as:
-
-```text
-Consumer_Goods_Ad_Hoc_Analysis_5_Slide_Lokesh_Kancharla.pptx
+mysql -u root -p < sql/00_init_database.sql
+mysql -u root -p < sql/01_schema.sql
+mysql -u root -p < sql/02_seed_data.sql
+mysql -u root -p < sql/03_validation.sql
+mysql -u root -p < sql/04_analysis.sql
 ```
 
 ## Data Model
+
 The project uses 2 dimension tables and 4 fact tables.
 
-### Dimension Tables
-- `dim_customer` stores customer information such as customer code, customer name, market, region, and channel.
-- `dim_product` stores product information such as product code, product name, segment, and division.
+### Dimension tables
 
-### Fact Tables
-- `fact_sales_monthly` stores monthly sales transactions by customer, product, fiscal year, date, and sold quantity.
-- `fact_gross_price` stores product price by fiscal year.
-- `fact_manufacturing_cost` stores product manufacturing cost by cost year.
-- `fact_pre_invoice_deductions` stores customer discount percentage by fiscal year.
+- `dim_customer` — customer name, market, region, and channel
+- `dim_product` — product name, segment, and division
 
-### Table Relationships
-- `dim_customer.customer_code` connects to `fact_sales_monthly.customer_code`.
-- `dim_customer.customer_code` connects to `fact_pre_invoice_deductions.customer_code`.
-- `dim_product.product_code` connects to `fact_sales_monthly.product_code`.
-- `dim_product.product_code` connects to `fact_gross_price.product_code`.
-- `dim_product.product_code` connects to `fact_manufacturing_cost.product_code`.
+### Fact tables
+
+- `fact_sales_monthly` — sales activity by date, customer, product, and fiscal year
+- `fact_gross_price` — product gross price by fiscal year
+- `fact_manufacturing_cost` — manufacturing cost by product and year
+- `fact_pre_invoice_deductions` — customer discount percentage by fiscal year
+
+### Relationships
+
+```text
+dim_customer (1) ─────< fact_sales_monthly (*) >───── (1) dim_product
+      |                                                    |
+      |                                                    ├────< fact_gross_price (*)
+      |                                                    |
+      |                                                    └────< fact_manufacturing_cost (*)
+      |
+      └────< fact_pre_invoice_deductions (*)
+```
+
+More detail is available in `docs/data_model.md`.
+
+## Business Questions Covered
+
+1. Which APAC markets does Croma operate in?
+2. How much did the number of unique products grow from FY2020 to FY2021?
+3. Which product segments contain the most products?
+4. Which segment experienced the strongest product growth?
+5. Which products have the highest and lowest manufacturing costs?
+6. Which Indian customers receive the highest average pre-invoice discounts?
+7. How do Croma's gross sales trend month by month?
+8. Which fiscal quarter generated the highest sold quantity?
+9. What percentage of gross sales comes from each sales channel?
+10. What are the top three products by sold quantity within each division?
+
+## SQL Skills Demonstrated
+
+- Database creation and initialization
+- Fact/dimension table modeling
+- Primary and foreign keys
+- Data integrity constraints
+- Index creation
+- Transaction-controlled data loading
+- JOINs
+- GROUP BY and aggregation
+- CTEs
+- CASE expressions
+- Window functions
+- `DENSE_RANK()`
+- Percentage calculations
+- Date-based analysis
+- Validation queries
+- Business KPI analysis
+
+## Repository Structure
+
+```text
+consumer-goods-ad-hoc-analysis/
+├── README.md
+├── docs/
+│   ├── business_questions.md
+│   └── data_model.md
+└── sql/
+    ├── 00_init_database.sql
+    ├── 01_schema.sql
+    ├── 02_seed_data.sql
+    ├── 03_validation.sql
+    └── 04_analysis.sql
+```
 
 ## Author
+
 Lokesh Kancharla
 
-> This project is an original portfolio implementation inspired by common consumer-goods ad-hoc SQL case-study patterns. The schema, sample data, documentation, and SQL organization in this repository were prepared for this portfolio project.
+> This repository is an original portfolio implementation based on a consumer-goods ad-hoc analytics use case. The codebase is designed to be reproducible, explainable in interviews, and easy for another developer or analyst to run locally.
+
+### Portfolio vs. production
+
+This is a production-style portfolio project, not a live production application. A real production deployment would normally add environment-specific configuration, secrets management, migrations, automated testing, CI/CD, access controls, monitoring, and backup/recovery procedures.
