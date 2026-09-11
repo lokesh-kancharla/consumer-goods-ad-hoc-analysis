@@ -1,6 +1,6 @@
 # Consumer Goods Ad-hoc Analysis
 
-A simple MySQL portfolio project that analyzes consumer-goods sales in the U.S.
+A simple MySQL and Power BI portfolio project that analyzes consumer-goods sales in the U.S.
 
 The goal is to use SQL to answer business questions about sales, products, customers, discounts, manufacturing costs, regions, and sales channels.
 
@@ -26,16 +26,27 @@ sql/04_analysis.sql        - Answers the business questions
 
 Run the SQL files in the order shown above.
 
-## Data
+## Data Model
 
 The project contains 6 tables:
 
 - `dim_customer` - customer, region, and sales channel
 - `dim_product` - product, segment, and division
-- `fact_sales_monthly` - sales quantity and date
-- `fact_gross_price` - product prices
+- `fact_sales_monthly` - sales date, customer, product, fiscal year, and quantity sold
+- `fact_gross_price` - product prices by fiscal year
 - `fact_manufacturing_cost` - product manufacturing costs
 - `fact_pre_invoice_deductions` - customer discounts
+
+```text
+dim_customer ── fact_sales_monthly ── dim_product
+      |                                  |
+      |                                  ├── fact_gross_price
+      |                                  └── fact_manufacturing_cost
+      |
+      └── fact_pre_invoice_deductions
+```
+
+`customer_code` connects customer data to sales and discounts. `product_code` connects product data to sales, prices, and manufacturing costs.
 
 The sample dataset uses U.S. customers such as BestBuy, Amazon, Walmart, Target, Costco, Staples, Newegg, and B&H Photo. The figures are synthetic and are used only for portfolio analysis.
 
@@ -69,9 +80,6 @@ The sample dataset uses U.S. customers such as BestBuy, Amazon, Walmart, Target,
 ```text
 consumer-goods-ad-hoc-analysis/
 ├── README.md
-├── docs/
-│   ├── business_questions.md
-│   └── data_model.md
 └── sql/
     ├── 00_init_database.sql
     ├── 01_schema.sql
