@@ -83,7 +83,13 @@ sql/02_analysis.sql
 - `sql/01_sample_data.sql` — sample dataset only
 - `sql/02_analysis.sql` — 10 business analysis queries
 - `docs/business_questions.md` — business context for each request
-- `Consumer_Goods_Ad_Hoc_Analysis_5_Slide_Lokesh_Kancharla.pptx` — project presentation deck
+
+## Presentation
+A 5-slide PowerPoint presentation was created for this project with the data model, insights, and SQL skills summary. Add it to the repository root as:
+
+```text
+Consumer_Goods_Ad_Hoc_Analysis_5_Slide_Lokesh_Kancharla.pptx
+```
 
 ## Data Model
 The project uses 2 dimension tables and 4 fact tables.
